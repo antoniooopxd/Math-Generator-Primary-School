@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Der Mathe-Generator 🧮🦁</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            light: '#e0f2fe',
+                            DEFAULT: '#0284c7',
+                            dark: '#0369a1',
+                            accent: '#f59e0b',
+                            pastelBlue: '#f0f9ff'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Fredoka', 'Quicksand', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Fredoka', 'Quicksand', sans-serif;
+            background-color: #f0f9ff;
+            background-image: radial-gradient(#bae6fd 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            body {
+                background: white !important;
+            }
+            .task-card {
+                break-inside: avoid;
+                border: 1px solid #cbd5e1 !important;
+                box-shadow: none !important;
+            }
+        }
+
+        .bubble-pop {
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .bubble-pop:hover {
+            transform: translateY(-2px) scale(1.01);
+        }
+
+        /* Custom scrollbars for clean UI */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e0f2fe;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #38bdf8;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between">
+
+    <!-- Compact Header -->
+    <header class="bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 text-white py-4 px-4 shadow-md relative overflow-hidden">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 relative z-10">
+            <!-- Title & Mascot Tag -->
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 p-2 rounded-2xl backdrop-blur-md border border-white/30 text-3xl shadow-inner">
+                    🧮
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-4xl font-extrabold tracking-wide drop-shadow-md text-amber-300 leading-tight">
+                        Der Mathe-Generator
+                    </h1>
+                    <p class="text-sky-100 text-xs md:text-sm font-medium">
+                        Schlaue Matheaufgaben für Grundschulkinder 🌟
+                    </p>
+                </div>
+            </div>
+
+            <!-- Parent/Teacher Mode & Print Actions -->
+            <div class="flex items-center gap-2 no-print">
+                <button onclick="toggleGlobalSolutions()" id="btn-toggle-solutions" class="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold px-3.5 py-2 rounded-xl shadow transition flex items-center gap-1.5 text-xs md:text-sm cursor-pointer border-b-2 border-amber-600 active:border-b-0 active:translate-y-0.5">
+                    <span id="eye-icon">👁️</span>
+                    <span id="toggle-solutions-text">Eltern-Modus: Lösungen zeigen</span>
+                </button>
+                
+                <button onclick="window.print()" class="bg-white text-sky-700 hover:bg-sky-50 font-bold px-3.5 py-2 rounded-xl shadow transition flex items-center gap-1.5 text-xs md:text-sm border-b-2 border-slate-200 active:border-b-0 active:translate-y-0.5">
+                    🖨️ Drucken
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
+
+        <!-- Controls Setup Section with Large Non-Overlapping Cards -->
+        <section class="no-print bg-white rounded-3xl p-6 shadow-xl border-2 border-sky-100">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-sky-100">
+                <div class="flex items-center gap-3">
+                    <!-- SVG Wise Owl Mascot -->
+                    <svg class="w-12 h-12 flex-shrink-0 drop-shadow-sm" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="50" cy="50" r="42" fill="#38BDF8"/>
+                        <circle cx="50" cy="54" r="34" fill="#0284C7"/>
+                        <circle cx="38" cy="42" r="12" fill="white"/>
+                        <circle cx="62" cy="42" r="12" fill="white"/>
+                        <circle cx="38" cy="42" r="5" fill="#0F172A"/>
+                        <circle cx="62" cy="42" r="5" fill="#0F172A"/>
+                        <polygon points="50,48 44,58 56,58" fill="#F59E0B"/>
+                        <polygon points="50,12 20,24 50,34 80,24" fill="#1E293B"/>
+                    </svg>
+                    <div>
+                        <h2 class="text-2xl font-bold text-sky-900 leading-snug">
+                            Wähle deine 3 Mathe-Bereiche aus 👑
+                        </h2>
+                        <p class="text-xs md:text-sm text-slate-500">Stelle die Rechenarten ein und erstelle deine 30 Aufgaben!</p>
+                    </div>
+                </div>
+
+                <button form="math-config-form" type="submit" class="w-full sm:w-auto bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white text-lg font-black py-3 px-8 rounded-2xl shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 border-b-4 border-blue-800 flex items-center justify-center gap-2 cursor-pointer flex-shrink-0">
+                    <span>✨</span>
+                    <span>Aufgaben Generieren!</span>
+                    <span>🚀</span>
+                </button>
+            </div>
+
+            <form id="math-config-form" onsubmit="generateTasks(event)">
+                <!-- 3 Large Grid Cards for Area 1, Area 2, Area 3 -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Bereich 1 -->
+                    <div class="bg-sky-50/90 p-6 rounded-3xl border-3 border-sky-300 flex flex-col justify-between shadow-sm bubble-pop">
+                        <div>
+                            <div class="flex items-center justify-between mb-4 pb-3 border-b border-sky-200/80">
+                                <span class="bg-sky-500 text-white font-extrabold px-4 py-1.5 rounded-2xl text-sm tracking-wide shadow-sm">
+                                    Bereich 1
+                                </span>
+                                <span class="text-3xl bg-white p-2 rounded-2xl shadow-inner border border-sky-200">➕</span>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sky-950 font-extrabold mb-1.5 text-base">Rechenart wählen:</label>
+                                    <select id="op1" class="w-full bg-white border-2 border-sky-300 rounded-2xl px-4 py-3 text-slate-800 font-bold text-base focus:outline-none focus:ring-4 focus:ring-sky-200 transition shadow-sm">
+                                        <option value="add" selected>Plus-Aufgaben (+ Addition)</option>
+                                        <option value="sub">Minus-Aufgaben (- Subtraktion)</option>
+                                        <option value="mul">Mal-Aufgaben (× Multiplikation)</option>
+                                        <option value="div">Geteilt-Aufgaben (÷ Division)</option>
+                                        <option value="mix">Gemischte Aufgaben (Alle)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sky-950 font-extrabold mb-1.5 text-base">Zahlenraum / Level:</label>
+                                    <select id="range1" class="w-full bg-white border-2 border-sky-300 rounded-2xl px-4 py-3 text-slate-800 font-bold text-base focus:outline-none focus:ring-4 focus:ring-sky-200 transition shadow-sm">
+                                        <option value="10">Bis 10 (Klasse 1)</option>
+                                        <option value="20" selected>Bis 20 (Klasse 1-2)</option>
+                                        <option value="100">Bis 100 (Klasse 2-3)</option>
+                                        <option value="1000">Bis 1000 (Klasse 3-4)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bereich 2 -->
+                    <div class="bg-amber-50/90 p-6 rounded-3xl border-3 border-amber-300 flex flex-col justify-between shadow-sm bubble-pop">
+                        <div>
+                            <div class="flex items-center justify-between mb-4 pb-3 border-b border-amber-200/80">
+                                <span class="bg-amber-500 text-white font-extrabold px-4 py-1.5 rounded-2xl text-sm tracking-wide shadow-sm">
+                                    Bereich 2
+                                </span>
+                                <span class="text-3xl bg-white p-2 rounded-2xl shadow-inner border border-amber-200">➖</span>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-amber-950 font-extrabold mb-1.5 text-base">Rechenart wählen:</label>
+                                    <select id="op2" class="w-full bg-white border-2 border-amber-300 rounded-2xl px-4 py-3 text-slate-800 font-bold text-base focus:outline-none focus:ring-4 focus:ring-amber-200 transition shadow-sm">
+                                        <option value="add">Plus-Aufgaben (+ Addition)</option>
+                                        <option value="sub" selected>Minus-Aufgaben (- Subtraktion)</option>
+                                        <option value="mul">Mal-Aufgaben (× Multiplikation)</option>
+                                        <option value="div">Geteilt-Aufgaben (÷ Division)</option>
+                                        <option value="mix">Gemischte Aufgaben (Alle)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-amber-950 font-extrabold mb-1.5 text-base">Zahlenraum / Level:</label>
+                                    <select id="range2" class="w-full bg-white border-2 border-amber-300 rounded-2xl px-4 py-3 text-slate-800 font-bold text-base focus:outline-none focus:ring-4 focus:ring-amber-200 transition shadow-sm">
+                                        <option value="10">Bis 10 (Klasse 1)</option>
+                                        <option value="20" selected>Bis 20 (Klasse 1-2)</option>
+                                        <option value="100">Bis 100 (Klasse 2-3)</option>
+                                        <option value="1000">Bis 1000 (Klasse 3-4)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bereich 3 -->
+                    <div class="bg-emerald-50/90 p-6 rounded-3xl border-3 border-emerald-300 flex flex-col justify-between shadow-sm bubble-pop">
+                        <div>
+                            <div class="flex items-center justify-between mb-4 pb-3 border-b border-emerald-200/80">
+                                <span class="bg-emerald-500 text-white font-extrabold px-4 py-1.5 rounded-2xl text-sm tracking-wide shadow-sm">
+                                    Bereich 3
+                                </span>
+                                <span class="text-3xl bg-white p-2 rounded-2xl shadow-inner border border-emerald-200">✖️</span>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-emerald-950 font-extrabold mb-1.5 text-base">Rechenart wählen:</label>
+                                    <select id="op3" class="w-full bg-white border-2 border-emerald-300 rounded-2xl px-4 py-3 text-slate-800 font-bold text-base focus:outline-none focus:ring-4 focus:ring-emerald-200 transition shadow-sm">
+                                        <option value="add">Plus-Aufgaben (+ Addition)</option>
+                                        <option value="sub">Minus-Aufgaben (- Subtraktion)</option>
+                                        <option value="mul" selected>Mal-Aufgaben (Einmaleins ×)</option>
+                                        <option value="div">Geteilt-Aufgaben (÷ Division)</option>
+                                        <option value="mix">Gemischte Aufgaben (Alle)</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-emerald-950 font-extrabold mb-1.5 text-base">Zahlenraum / Level:</label>
+                                    <select id="range3" class="w-full bg-white border-2 border-emerald-300 rounded-2xl px-4 py-3 text-slate-800 font-bold text-base focus:outline-none focus:ring-4 focus:ring-emerald-200 transition shadow-sm">
+                                        <option value="10" selected>Einmaleins (1 bis 10)</option>
+                                        <option value="20">Bis 20</option>
+                                        <option value="100">Bis 100</option>
+                                        <option value="1000">Bis 1000</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+        </section>
+
+        <!-- Interactive Online Scoreboard -->
+        <div id="score-tracker" class="no-print bg-white rounded-2xl p-4 shadow-md border-2 border-sky-100 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">🏆</span>
+                <div>
+                    <h3 class="font-bold text-sky-900 leading-tight">Dein Punkte-Stand</h3>
+                    <p class="text-xs text-slate-500">Tippe deine Antworten direkt auf der Seite ein!</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="bg-amber-100 text-amber-900 font-extrabold px-4 py-1.5 rounded-xl text-lg flex items-center gap-1 border border-amber-300">
+                    <span>⭐</span>
+                    <span id="score-display">0 / 30</span>
+                </div>
+                <button onclick="resetAnswers()" class="text-xs text-slate-500 hover:text-sky-600 underline cursor-pointer">
+                    Eingaben zurücksetzen
+                </button>
+            </div>
+        </div>
+
+        <!-- Generated Tasks Worksheet Section -->
+        <div id="worksheet-container" class="space-y-8">
+            <!-- Dynamic task blocks will be inserted here via JavaScript -->
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-sky-100 py-4 text-center text-slate-500 text-xs md:text-sm mt-8 no-print">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div class="flex items-center gap-2 font-semibold text-sky-700">
+                <span>🦁</span>
+                <span>Der Mathe-Generator für Grundschulkinder</span>
+            </div>
+            <p>© Mathe macht Spaß! • Zum Lernen & Üben zu Hause und in der Schule</p>
+        </div>
+    </footer>
+
+    <script>
+        // Global state
+        let globalTasksData = [];
+        let showSolutionsGlobally = false;
+        let userScores = {};
+
+        const operationNames = {
+            'add': 'Addition (+)',
+            'sub': 'Subtraktion (-)',
+            'mul': 'Multiplikation (×)',
+            'div': 'Division (÷)',
+            'mix': 'Gemischte Aufgaben'
+        };
+
+        // Helper to get random integer [min, max]
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        // Generate 1 Task based on op and range
+        function createSingleTask(opType, rangeVal) {
+            let num1, num2, symbol, answer;
+            const max = parseInt(rangeVal, 10);
+
+            let currentOp = opType;
+            if (currentOp === 'mix') {
+                const ops = ['add', 'sub', 'mul', 'div'];
+                currentOp = ops[Math.floor(Math.random() * ops.length)];
+            }
+
+            switch (currentOp) {
+                case 'add':
+                    symbol = '+';
+                    num1 = getRandomInt(1, Math.max(5, max - 1));
+                    num2 = getRandomInt(1, max - num1);
+                    answer = num1 + num2;
+                    break;
+
+                case 'sub':
+                    symbol = '-';
+                    num1 = getRandomInt(2, max);
+                    num2 = getRandomInt(1, num1);
+                    answer = num1 - num2;
+                    break;
+
+                case 'mul':
+                    symbol = '×';
+                    if (max <= 20) {
+                        num1 = getRandomInt(1, 10);
+                        num2 = getRandomInt(1, 10);
+                    } else if (max <= 100) {
+                        num1 = getRandomInt(2, 10);
+                        num2 = getRandomInt(2, 10);
+                    } else {
+                        num1 = getRandomInt(3, 20);
+                        num2 = getRandomInt(2, 10);
+                    }
+                    answer = num1 * num2;
+                    break;
+
+                case 'div':
+                    symbol = '÷';
+                    let factor2 = getRandomInt(1, max <= 20 ? 10 : 12);
+                    let factor1 = getRandomInt(1, 10);
+                    num1 = factor1 * factor2; // Dividend
+                    num2 = factor2; // Divisor
+                    answer = factor1;
+                    break;
+            }
+
+            return { num1, num2, symbol, answer };
+        }
+
+        // Generate full worksheet (3 categories x 10 tasks)
+        function generateTasks(event) {
+            if (event) event.preventDefault();
+
+            globalTasksData = [];
+            userScores = {};
+
+            const categories = [
+                { id: 1, op: document.getElementById('op1').value, range: document.getElementById('range1').value, color: 'sky' },
+                { id: 2, op: document.getElementById('op2').value, range: document.getElementById('range2').value, color: 'amber' },
+                { id: 3, op: document.getElementById('op3').value, range: document.getElementById('range3').value, color: 'emerald' }
+            ];
+
+            categories.forEach((cat, catIdx) => {
+                const tasks = [];
+                for (let i = 0; i < 10; i++) {
+                    tasks.push(createSingleTask(cat.op, cat.range));
+                }
+                globalTasksData.push({
+                    categoryTitle: `Bereich ${catIdx + 1}: ${operationNames[cat.op]} (bis ${cat.range})`,
+                    color: cat.color,
+                    tasks: tasks
+                });
+            });
+
+            renderWorksheet();
+            updateScoreDisplay();
+        }
+
+        // Render tasks into HTML
+        function renderWorksheet() {
+            const container = document.getElementById('worksheet-container');
+            container.innerHTML = '';
+
+            const animalMascots = [
+                { name: 'Schlauer Uhu', icon: '🦉', quote: 'Du machst das super!' },
+                { name: 'Mutiger Löwe', icon: '🦁', quote: 'Rechnen ist deine Stärke!' },
+                { name: 'Fröhlicher Hund', icon: '🐶', quote: 'Weiter so, du bist Klasse!' }
+            ];
+
+            globalTasksData.forEach((catData, catIdx) => {
+                const mascot = animalMascots[catIdx % animalMascots.length];
+                
+                let headerBg = 'bg-sky-500';
+                let cardBorder = 'border-sky-200';
+
+                if (catData.color === 'amber') {
+                    headerBg = 'bg-amber-500';
+                    cardBorder = 'border-amber-200';
+                } else if (catData.color === 'emerald') {
+                    headerBg = 'bg-emerald-500';
+                    cardBorder = 'border-emerald-200';
+                }
+
+                let catHtml = `
+                    <div class="bg-white rounded-3xl shadow-lg border-2 ${cardBorder} overflow-hidden task-card">
+                        <!-- Category Header -->
+                        <div class="${headerBg} px-6 py-4 text-white flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-3">
+                                <span class="text-3xl">${mascot.icon}</span>
+                                <h3 class="text-xl md:text-2xl font-bold tracking-wide">${catData.categoryTitle}</h3>
+                            </div>
+                            <span class="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold">
+                                10 Aufgaben
+                            </span>
+                        </div>
+
+                        <div class="bg-slate-50 px-6 py-2 border-b border-slate-100 flex items-center justify-between text-xs text-slate-500 no-print">
+                            <span>Motto: <i>"${mascot.quote}"</i></span>
+                            <button onclick="toggleCategorySolutions(${catIdx})" class="text-sky-600 font-bold hover:underline cursor-pointer">
+                                👁️ Lösungen für diesen Bereich umschalten
+                            </button>
+                        </div>
+
+                        <!-- 10 Tasks Grid -->
+                        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                `;
+
+                catData.tasks.forEach((task, taskIdx) => {
+                    const taskId = `task_${catIdx}_${taskIdx}`;
+                    catHtml += `
+                        <div class="bg-slate-50/90 rounded-2xl p-4 border border-slate-200 flex items-center justify-between hover:bg-slate-100 transition shadow-sm">
+                            <div class="flex items-center gap-2 text-xl font-extrabold text-slate-800">
+                                <span class="text-xs font-bold text-slate-400 w-5">${taskIdx + 1}.</span>
+                                <span>${task.num1} ${task.symbol} ${task.num2} =</span>
+                                
+                                <input type="number" 
+                                       id="input_${taskId}" 
+                                       oninput="checkAnswer(${catIdx}, ${taskIdx}, ${task.answer})"
+                                       placeholder="?" 
+                                       class="no-print w-16 h-10 text-center text-lg font-bold bg-white border-2 border-sky-300 rounded-xl text-sky-900 focus:outline-none focus:ring-2 focus:ring-sky-500" />
+                                
+                                <span class="hidden print-only inline-block w-12 border-b-2 border-slate-400">&nbsp;</span>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <span id="feedback_${taskId}" class="hidden text-xl no-print"></span>
+
+                                <div class="relative">
+                                    <button onclick="toggleSingleSolution('${taskId}')" 
+                                            class="no-print bg-sky-100 hover:bg-sky-200 text-sky-800 text-xs font-bold px-2.5 py-1.5 rounded-xl transition cursor-pointer border border-sky-300 flex items-center gap-1">
+                                        <span id="eye_${taskId}">🔒</span>
+                                        <span id="solution_text_${taskId}" class="${showSolutionsGlobally ? '' : 'blur-sm select-none'} font-black text-sm text-amber-600">${task.answer}</span>
+                                    </button>
+                                    
+                                    <span class="hidden print-only text-xs text-slate-400 font-mono">
+                                        (${task.answer})
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                catHtml += `
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML += catHtml;
+            });
+        }
+
+        // Check Online Interactive Input Answer
+        function checkAnswer(catIdx, taskIdx, correctAnswer) {
+            const taskId = `task_${catIdx}_${taskIdx}`;
+            const inputEl = document.getElementById(`input_${taskId}`);
+            const feedbackEl = document.getElementById(`feedback_${taskId}`);
+            const val = parseInt(inputEl.value.trim(), 10);
+
+            if (isNaN(val)) {
+                delete userScores[taskId];
+                feedbackEl.classList.add('hidden');
+                inputEl.classList.remove('border-green-500', 'border-red-400', 'bg-green-50');
+                inputEl.classList.add('border-sky-300');
+            } else if (val === correctAnswer) {
+                userScores[taskId] = true;
+                feedbackEl.textContent = '🌟';
+                feedbackEl.classList.remove('hidden');
+                inputEl.classList.remove('border-sky-300', 'border-red-400');
+                inputEl.classList.add('border-green-500', 'bg-green-50');
+                
+                if (Object.keys(userScores).length === 30) {
+                    confetti({
+                        particleCount: 100,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
+                }
+            } else {
+                delete userScores[taskId];
+                feedbackEl.textContent = '❌';
+                feedbackEl.classList.remove('hidden');
+                inputEl.classList.remove('border-sky-300', 'border-green-500', 'bg-green-50');
+                inputEl.classList.add('border-red-400');
+            }
+
+            updateScoreDisplay();
+        }
+
+        function updateScoreDisplay() {
+            const totalCorrect = Object.keys(userScores).length;
+            document.getElementById('score-display').textContent = `${totalCorrect} / 30`;
+        }
+
+        function resetAnswers() {
+            userScores = {};
+            updateScoreDisplay();
+            renderWorksheet();
+        }
+
+        function toggleSingleSolution(taskId) {
+            const solEl = document.getElementById(`solution_text_${taskId}`);
+            const eyeEl = document.getElementById(`eye_${taskId}`);
+            
+            if (solEl.classList.contains('blur-sm')) {
+                solEl.classList.remove('blur-sm', 'select-none');
+                eyeEl.textContent = '🔓';
+            } else {
+                solEl.classList.add('blur-sm', 'select-none');
+                eyeEl.textContent = '🔒';
+            }
+        }
+
+        function toggleCategorySolutions(catIdx) {
+            for (let i = 0; i < 10; i++) {
+                toggleSingleSolution(`task_${catIdx}_${i}`);
+            }
+        }
+
+        function toggleGlobalSolutions() {
+            showSolutionsGlobally = !showSolutionsGlobally;
+            const btnText = document.getElementById('toggle-solutions-text');
+            const eyeIcon = document.getElementById('eye-icon');
+
+            if (showSolutionsGlobally) {
+                btnText.textContent = "Eltern-Modus: Lösungen verbergen";
+                eyeIcon.textContent = "🙈";
+            } else {
+                btnText.textContent = "Eltern-Modus: Lösungen zeigen";
+                eyeIcon.textContent = "👁️";
+            }
+
+            globalTasksData.forEach((cat, catIdx) => {
+                cat.tasks.forEach((_, taskIdx) => {
+                    const taskId = `task_${catIdx}_${taskIdx}`;
+                    const solEl = document.getElementById(`solution_text_${taskId}`);
+                    const eyeEl = document.getElementById(`eye_${taskId}`);
+                    if (solEl && eyeEl) {
+                        if (showSolutionsGlobally) {
+                            solEl.classList.remove('blur-sm', 'select-none');
+                            eyeEl.textContent = '🔓';
+                        } else {
+                            solEl.classList.add('blur-sm', 'select-none');
+                            eyeEl.textContent = '🔒';
+                        }
+                    }
+                });
+            });
+        }
+
+        window.onload = function() {
+            generateTasks();
+        };
+    </script>
+</body>
+</html>
